@@ -11,6 +11,9 @@ pad_length = 18;
 pad_width = 7;
 foam_crown = 1.2; // Estimated crosswise rise over the full width of the feet.
 foam_lengthwise_crown = 0.35; // Estimated front-to-back rise over one foot.
+glue_tab_length = 9;
+glue_tab_width = 3.6;
+glue_tab_depth = 2; // Depth below each curved shoulder.
 
 // Round PT40 shaft saddle.
 tube_diameter = 4.5;
@@ -33,6 +36,7 @@ strap_width = 3;
 strap_thickness = 0.8;
 strap_offset = -7; // Rear of the board, away from the upward-facing ports.
 cradle_floor = 1.8;
+connector_slot_width = 10; // Centred on the inboard PCB edge. Check the plug width.
 
 module rounded_plate(length, width, height, radius) {
     linear_extrude(height)
@@ -57,11 +61,14 @@ module bridge_deck(total_width) {
         rotate([90, 0, 0])
             linear_extrude(total_width - 1, center = true)
                 hull() {
-                    for (x = [-flat_half_length, flat_half_length])
+                    // Small nose radius, flat saddle landing, and a thin tail.
+                    translate([-flat_half_length - 0.5, 1])
+                        circle(r = 1);
+                    for (x = [-flat_half_length + 1.2, flat_half_length - 1.2])
                         translate([x, bridge_thickness / 2])
                             circle(d = bridge_thickness);
-                    translate([flat_half_length + 2, 0.6])
-                        circle(r = 0.6);
+                    translate([flat_half_length + 5.5, 0.5])
+                        circle(r = 0.5);
                 }
 }
 
@@ -72,7 +79,7 @@ module pipe_saddle(deck_top, shaft_axis_z) {
 
     difference() {
         translate([0, 0, deck_top - 0.15])
-            rounded_plate(saddle_length, saddle_width, groove_z - deck_top + 0.15, 1);
+            rounded_plate(saddle_length, saddle_width, groove_z - deck_top + 0.15, 1.7);
         translate([0, 0, groove_z])
             rotate([0, 90, 0])
                 cylinder(d = bore, h = saddle_length + 2, center = true);
@@ -129,19 +136,32 @@ module saddle() {
     deck_top = bridge_height + bridge_thickness;
     shaft_axis_z = deck_top + 3 + tube_diameter / 2;
     total_width = vent_span + 2 * pad_width;
-    difference() {
-        union() {
-            for (side = [-1, 1])
-                translate([0, side * (vent_span + pad_width) / 2, 0])
-                    glue_pad();
+    union() {
+        difference() {
+            union() {
+                for (side = [-1, 1])
+                    translate([0, side * (vent_span + pad_width) / 2, 0])
+                        glue_pad();
 
-            bridge_deck(total_width);
-            pipe_saddle(deck_top, shaft_axis_z);
-            manifold_support(shaft_axis_z);
+                bridge_deck(total_width);
+                pipe_saddle(deck_top, shaft_axis_z);
+                manifold_support(shaft_axis_z);
+            }
+
+            if (foam_crown > 0 || foam_lengthwise_crown > 0)
+                foam_clearance(total_width);
         }
 
-        if (foam_crown > 0 || foam_lengthwise_crown > 0)
-            foam_clearance(total_width);
+        // The tabs enter shallow pockets. Their ends follow the foam profile
+        // at a constant depth, while the shoulders seat on the original skin.
+        if (glue_tab_depth > 0)
+            difference() {
+                for (side = [-1, 1])
+                    translate([-2, side * (vent_span + pad_width) / 2, -glue_tab_depth - 0.5])
+                        rounded_plate(glue_tab_length, glue_tab_width, glue_tab_depth + 2.8, 0.5);
+                translate([0, 0, -glue_tab_depth])
+                    foam_clearance(total_width);
+            }
     }
 }
 
@@ -152,17 +172,24 @@ module cradle() {
     length = board_length + 2 * board_clearance + 2;
     width = opening + 9;
     strap_slot_x = opening / 2 + 2.1;
+    rail_x = opening / 2 + 0.65;
+    rail_start = connector_slot_width / 2 + 0.4;
+    rail_end = board_length / 2 - 1.1;
 
     difference() {
         union() {
             rounded_plate(width, length, floor_height, 2);
-            // Short rails leave the board ends accessible.
-            for (side = [-1, 1])
-                translate([side * (opening / 2 + 0.65), 0,
+            translate([-rail_x, 0, floor_height - 0.01])
+                rounded_plate(1.3, board_length * 0.55, rail_height + 0.01, 0.35);
+            // The centred connector exits between the two inboard rails.
+            for (end = [-1, 1])
+                translate([rail_x, end * (rail_start + rail_end) / 2,
                     floor_height - 0.01])
-                    rounded_plate(1.3, board_length * 0.55,
-                        rail_height + 0.01, 0.35);
+                    rounded_plate(1.3, rail_end - rail_start, rail_height + 0.01, 0.35);
         }
+        translate([board_width / 2 - 0.3, -connector_slot_width / 2, -0.1])
+            cube([width / 2 - board_width / 2 + 1, connector_slot_width,
+                floor_height + rail_height + 0.2]);
         // Feed the strap through the under-floor tunnel before gluing.
         translate([-strap_slot_x - 0.8, strap_offset - strap_width / 2, -0.01])
             cube([2 * strap_slot_x + 1.6, strap_width, strap_thickness + 0.01]);
