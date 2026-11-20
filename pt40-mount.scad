@@ -19,6 +19,11 @@ saddle_width = 11;
 tie_width = 2.5;
 tie_thickness = 1.2;
 
+// Shallow support for the black rear manifold.
+manifold_diameter = 9.5; // Read from the photo annotation. Confirm with calipers.
+manifold_clearance = 0.4;
+manifold_seat_length = 8;
+
 // Sensor envelope. X is across the board, Y runs toward the hose exit.
 board_width = 20;
 board_length = 22;
@@ -59,9 +64,9 @@ module bridge_deck(total_width) {
                 }
 }
 
-module pipe_saddle(deck_top) {
+module pipe_saddle(deck_top, shaft_axis_z) {
     bore = tube_diameter + tube_clearance;
-    groove_z = deck_top + 3 + bore / 2;
+    groove_z = shaft_axis_z + tube_clearance / 2;
     tie_slot_height = tie_thickness + 0.35;
 
     difference() {
@@ -76,7 +81,28 @@ module pipe_saddle(deck_top) {
     }
 }
 
+module manifold_support(shaft_axis_z) {
+    seat_diameter = manifold_diameter + manifold_clearance;
+    seat_centre_x = saddle_length / 2 + 0.4 + manifold_seat_length / 2;
+    support_base = bridge_height + 0.8;
+    support_top = shaft_axis_z - seat_diameter / 2 + 0.6;
+    front_overlap = 1;
+    support_width = 8;
+
+    difference() {
+        // Stop below the side tab and ahead of both hose barbs.
+        translate([seat_centre_x - front_overlap / 2, 0, support_base])
+            rounded_plate(manifold_seat_length + front_overlap, support_width,
+                support_top - support_base, 0.8);
+        translate([seat_centre_x, 0, shaft_axis_z])
+            rotate([0, 90, 0])
+                cylinder(d = seat_diameter, h = manifold_seat_length + 4, center = true);
+    }
+}
+
 module saddle() {
+    deck_top = bridge_height + bridge_thickness;
+    shaft_axis_z = deck_top + 3 + tube_diameter / 2;
     total_width = vent_span + 2 * pad_width;
     half_width = total_width / 2;
     foam_radius = foam_crown > 0
@@ -90,7 +116,8 @@ module saddle() {
                     glue_pad();
 
             bridge_deck(total_width);
-            pipe_saddle(bridge_height + bridge_thickness);
+            pipe_saddle(deck_top, shaft_axis_z);
+            manifold_support(shaft_axis_z);
         }
 
         if (foam_crown > 0)
