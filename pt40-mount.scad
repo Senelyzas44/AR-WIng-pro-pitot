@@ -6,8 +6,8 @@ $fn = 72;
 
 // Vent bridge. Negative X faces the nose, Y crosses the vent.
 vent_span = 22; // Photo estimate with clearance at the sides.
-bridge_height = 7;
-bridge_thickness = 2.5;
+bridge_height = 5.5; // Nominal opening above the glue-pad datum.
+bridge_thickness = 2.2;
 pad_length = 18;
 pad_width = 7;
 foam_crown = 1.2; // Estimated crosswise rise over the full width of the feet.
@@ -28,7 +28,7 @@ tie_thickness = 1.2;
 // Shallow support for the black rear manifold.
 manifold_diameter = 9.5; // Read from the photo annotation. Confirm with calipers.
 manifold_clearance = 0.4;
-manifold_seat_length = 8;
+manifold_seat_length = 9.5;
 
 // Sensor envelope. X is across the board, Y runs toward the hose exit.
 board_width = 20;
@@ -75,7 +75,7 @@ module bridge_deck(total_width) {
                     for (x = [-flat_half_length + 1.2, flat_half_length - 1.2])
                         translate([x, bridge_thickness / 2])
                             circle(d = bridge_thickness);
-                    translate([flat_half_length + 5.5, 0.5])
+                    translate([flat_half_length + 7, 0.5])
                         circle(r = 0.5);
                 }
 }
@@ -231,6 +231,12 @@ module cradle() {
         translate([board_width / 2 - 0.3, -connector_slot_width / 2, -0.1])
             cube([width / 2 - board_width / 2 + 1, connector_slot_width,
                 floor_height + rail_height + 0.2]);
+        // Keep the plug accessible when the board's connector faces an end.
+        for (end = [-1, 1])
+            scale([1, end, 1])
+                translate([-connector_slot_width / 2, board_length / 2 - 0.3, -0.1])
+                    cube([connector_slot_width, length / 2 - board_length / 2 + 1,
+                        floor_height + rail_height + 0.2]);
         // Feed the strap through the under-floor tunnel before gluing.
         translate([-strap_slot_x - 0.8, strap_offset - strap_width / 2, -0.01])
             cube([2 * strap_slot_x + 1.6, strap_width, strap_thickness + 0.01]);
