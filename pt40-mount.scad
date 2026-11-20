@@ -3,7 +3,7 @@
 part = "both";
 $fn = 72;
 
-// Vent bridge. X follows the probe, Y crosses the vent.
+// Vent bridge. Negative X faces the nose, Y crosses the vent.
 vent_span = 22; // Estimate from the 20 mm photo annotation, plus side clearance.
 hose_clearance = 10; // Extra room for the hoses to descend into the vent.
 pad_length = 18;
@@ -41,16 +41,39 @@ module tab_seat(z) {
     }
 }
 
+module streamlined_pad(height) {
+    linear_extrude(height)
+        hull() {
+            translate([-pad_length / 2 + pad_width / 2, 0])
+                circle(d = pad_width);
+            translate([pad_length / 2 - 0.8, 0])
+                circle(r = 0.8);
+        }
+}
+
+module streamlined_deck() {
+    seat_half_length = (tab_length + 2) / 2;
+    translate([0, 0, hose_clearance])
+        rotate([90, 0, 0])
+            linear_extrude(vent_span + 2 * pad_width, center = true)
+                hull() {
+                    for (x = [-seat_half_length, seat_half_length])
+                        translate([x, bridge_thickness / 2])
+                            circle(d = bridge_thickness);
+                    // Leave the tab landing flat and taper the downstream edge.
+                    translate([seat_half_length + 4, 0.6])
+                        circle(r = 0.6);
+                }
+}
+
 module saddle() {
     deck_top = hose_clearance + bridge_thickness;
     union() {
         for (side = [-1, 1])
             translate([0, side * (vent_span + pad_width) / 2, 0])
-                rounded_plate(pad_length, pad_width, hose_clearance + 0.1, 1.5);
+                streamlined_pad(hose_clearance + 0.2);
 
-        translate([0, 0, hose_clearance])
-            rounded_plate(tab_length + 3, vent_span + 2 * pad_width,
-                bridge_thickness, 1.5);
+        streamlined_deck();
 
         if (mirror_tab)
             mirror([0, 1, 0])
