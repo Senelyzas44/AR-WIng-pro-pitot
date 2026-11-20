@@ -2,11 +2,15 @@
 
 A two-piece glue-on mount for the Holybro PT40 pitot tube and MS5525DSO airspeed sensor on the SonicModell AR Wing Pro.
 
-- [Round pipe holder STL](pitot-vent-bridge.stl) has a 4.8 mm open groove for the measured 4.5 mm PT40 shaft. The exposed bridge has a rounded leading edge and a tapered tail. Two curved shoulders straddle the existing vent, with shallow glue tabs that recess into the foam. A 2.5 mm cable tie wraps over the tube. An integral rear cradle supports the black plastic manifold.
+- [Round pipe holder STL](pitot-vent-bridge.stl) is exported nose-down for printing. It has a 4.8 mm open groove for the measured 4.5 mm PT40 shaft. The exposed bridge has a rounded leading edge and a tapered tail. Two curved shoulders straddle the existing vent, with shallow glue tabs that recess into the foam. A 2.5 mm cable tie wraps over the tube. An integral rear cradle supports the black plastic manifold.
 - [Sensor cradle STL](sensor-cradle.stl) holds the sensor flat on the plywood ahead of the ELRS receiver, with both pressure ports facing up. The inboard rail is split around a centred 10 mm plug opening.
 - [OpenSCAD source](pt40-mount.scad) contains the part dimensions.
 
 ![Three-quarter assembly sketch](assembly-preview.png)
+
+## Printing the bridge
+
+Keep the STL in its supplied orientation, with the flat nose face on the bed. The vent passage builds sideways in this orientation, and the shaft saddle and glue tabs have ramps to reduce overhangs. The tie tunnel has a pointed end in the build direction so it closes gradually. Start with 0.2 mm layers and check the tie tunnel in the slicer preview before adding supports.
 
 ## Fit and assembly
 
@@ -19,6 +23,6 @@ Feed a thin strap through the sensor cradle before gluing it to the plywood. Lay
 ## Export
 
 ```sh
-openscad -o pitot-vent-bridge.stl -D 'part="saddle"' pt40-mount.scad
+openscad -o pitot-vent-bridge.stl -D 'part="print_saddle"' pt40-mount.scad
 openscad -o sensor-cradle.stl -D 'part="cradle"' pt40-mount.scad
 ```

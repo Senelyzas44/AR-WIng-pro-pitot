@@ -1,5 +1,6 @@
 // AR Wing Pro left-pocket airspeed mount. Units are millimetres.
-// Select "saddle" or "cradle" to export an individual part.
+// Select "print_saddle" or "cradle" to export a print-ready part.
+// Select "saddle" to see the bridge in its installed orientation.
 part = "both";
 $fn = 72;
 
@@ -20,6 +21,7 @@ tube_diameter = 4.5;
 tube_clearance = 0.3; // Diametral clearance.
 saddle_length = 12;
 saddle_width = 11;
+print_face_x = -saddle_length / 2 - 1; // Short nose flat on the print bed.
 tie_width = 2.5;
 tie_thickness = 1.2;
 
@@ -42,6 +44,12 @@ module rounded_plate(length, width, height, radius) {
     linear_extrude(height)
         offset(r = radius)
             square([length - 2 * radius, width - 2 * radius], center = true);
+}
+
+module xz_prism(points, width) {
+    rotate([90, 0, 0])
+        linear_extrude(width, center = true)
+            polygon(points);
 }
 
 module glue_pad() {
@@ -77,15 +85,30 @@ module pipe_saddle(deck_top, shaft_axis_z) {
     groove_z = shaft_axis_z + tube_clearance / 2;
     tie_slot_height = tie_thickness + 0.35;
 
+    slot_half_width = (tie_width + 0.45) / 2;
+    slot_bottom = deck_top + 0.45;
+    slot_top = slot_bottom + tie_slot_height;
+    ramp_start = deck_top - 1.45;
+    saddle_base = deck_top - 0.45;
+    rear = saddle_length / 2 + 0.5;
+
     difference() {
-        translate([0, 0, deck_top - 0.15])
-            rounded_plate(saddle_length, saddle_width, groove_z - deck_top + 0.15, 1.7);
+        intersection() {
+            translate([0, 0, saddle_base])
+                rounded_plate(saddle_length, saddle_width, groove_z - saddle_base, 1.7);
+            // Grow the upper saddle at 45 degrees from the nose-down build face.
+            xz_prism([[print_face_x, ramp_start - 0.1], [rear, ramp_start - 0.1],
+                [rear, ramp_start + rear - print_face_x], [print_face_x, ramp_start]],
+                saddle_width + 1);
+        }
         translate([0, 0, groove_z])
             rotate([0, 90, 0])
                 cylinder(d = bore, h = saddle_length + 2, center = true);
-        // Crosswise passage for a tie that wraps over the tube.
-        translate([-(tie_width + 0.45) / 2, -saddle_width / 2 - 1, deck_top + 0.45])
-            cube([tie_width + 0.45, saddle_width + 2, tie_slot_height]);
+        // The pointed end closes the tie tunnel gradually as the print builds.
+        xz_prism([[-slot_half_width, slot_bottom], [slot_half_width, slot_bottom],
+            [slot_half_width + tie_slot_height / 2, (slot_bottom + slot_top) / 2],
+            [slot_half_width, slot_top], [-slot_half_width, slot_top]],
+            saddle_width + 2);
     }
 }
 
@@ -132,7 +155,7 @@ module foam_clearance(total_width) {
                         polygon(concat([[-y_limit, -2], [y_limit, -2]], cross_section));
 }
 
-module saddle() {
+module saddle_body() {
     deck_top = bridge_height + bridge_thickness;
     shaft_axis_z = deck_top + 3 + tube_diameter / 2;
     total_width = vent_span + 2 * pad_width;
@@ -158,10 +181,28 @@ module saddle() {
             difference() {
                 for (side = [-1, 1])
                     translate([-2, side * (vent_span + pad_width) / 2, -glue_tab_depth - 0.5])
-                        rounded_plate(glue_tab_length, glue_tab_width, glue_tab_depth + 2.8, 0.5);
+                        intersection() {
+                            rounded_plate(glue_tab_length, glue_tab_width, glue_tab_depth + 2.8, 0.5);
+                            // Ramp the leading end of each tab from its shoulder.
+                            xz_prism([[-glue_tab_length / 2, glue_tab_depth + 1.1],
+                                [glue_tab_depth + 1.1 - glue_tab_length / 2, 0],
+                                [glue_tab_length / 2, 0],
+                                [glue_tab_length / 2, glue_tab_depth + 3],
+                                [-glue_tab_length / 2, glue_tab_depth + 3]], glue_tab_width + 1);
+                        }
                 translate([0, 0, -glue_tab_depth])
                     foam_clearance(total_width);
             }
+    }
+}
+
+module saddle() {
+    // Share the same nose flat across the bridge and both shoulders.
+    intersection() {
+        saddle_body();
+        translate([print_face_x, -(vent_span + 2 * pad_width) / 2 - 1, -glue_tab_depth - 1])
+            cube([2 * pad_length, vent_span + 2 * pad_width + 2,
+                bridge_height + bridge_thickness + tube_diameter + glue_tab_depth + 5]);
     }
 }
 
@@ -201,6 +242,8 @@ module cradle() {
 
 if (part == "saddle") saddle();
 if (part == "cradle") cradle();
+if (part == "print_saddle")
+    translate([0, 0, -print_face_x]) rotate([0, -90, 0]) saddle();
 if (part == "both") {
     saddle();
     translate([36, 0, 0]) cradle();
