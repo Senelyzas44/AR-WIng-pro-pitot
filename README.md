@@ -1,18 +1,20 @@
 # AR Wing Pro PT40 mount
 
-A two-piece, glue-on mount for a Holybro PT40 pitot tube and MS5525DSO airspeed sensor on the SonicModell AR Wing Pro.
+A two-piece glue-on mount for the Holybro PT40 pitot tube and MS5525DSO airspeed sensor on the SonicModell AR Wing Pro.
 
-- [Vent bridge STL](pitot-vent-bridge.stl) spans the existing left-pocket vent. Its exposed bridge has a rounded leading edge and tapered trailing edge. The two streamlined glue pads sit on the fixed foam and its upper recess seats the PT40 factory tab.
-- [Sensor cradle STL](sensor-cradle.stl) sits on the plywood just inside the vent, ahead of the ELRS receiver. Feed a retaining strap through the cradle before gluing.
-- [OpenSCAD source](pt40-mount.scad) contains the dimensions for both parts.
+- [Round pipe holder STL](pitot-vent-bridge.stl) has a 4.8 mm open groove for the measured 4.5 mm PT40 shaft. Two curved glue pads straddle the existing vent. A 2.5 mm cable tie threads through the holder and wraps over the tube.
+- [Sensor cradle STL](sensor-cradle.stl) holds the sensor flat on the plywood ahead of the ELRS receiver, with both pressure ports facing up.
+- [OpenSCAD source](pt40-mount.scad) contains the part dimensions.
 
-![Installed side view](assembly-sketch.svg)
+![Three-quarter assembly sketch](assembly-preview.png)
 
 ## Fit and assembly
 
-The bridge has a 22 mm span and 10 mm clearance underneath. The span and tab dimensions are prototype estimates based on photos. Dry-fit both pads to the curved foam and check the tab fit before gluing.
+Dry-fit the holder over the nose-side portion of the vent. The glue-pad spacing assumes a 22 mm opening and a 1.2 mm crown across the full 36 mm footprint, both estimated from photos. Adjust the OpenSCAD dimensions if either pad rocks or overlaps the vent. Use foam-safe adhesive on the pads.
 
-Orient the rounded edge and broad ends of the pads toward the nose. Point the probe the same way, with its pressure openings in open air ahead of the printed bridge. Lay the sensor flat with the ports facing up and orient the port end toward the vent. Feed a thin strap through the rear slots before gluing and keep it clear of the ports, connector, and exposed components. Route each hose up off its port, then in a gentle bend toward the existing vent and under the bridge. The 1.8 mm cradle floor leaves roughly 7 mm above the bare ports given a 20 mm pocket depth and an 11.4 mm sensor height. Actual hose clearance depends on the hatch shape. Check that both hoses bend freely with the hatch shut and that the probe clears the ground with the wing tilted nose-down. Use foam-safe adhesive on the bridge pads.
+Seat the shaft immediately ahead of the black manifold, with the probe pointing straight toward the nose. Thread a narrow cable tie through the crosswise slot and snug it around the shaft. Check that the tube cannot slide and that the static holes are exposed.
+
+Feed a thin strap through the sensor cradle before gluing it to the plywood. With the board lying flat and its barbs up, route the two hoses through the rear of the vent behind the holder. Check for hose pinching with the hatch shut and ground clearance with the wing tilted nose-down.
 
 ## Export
 

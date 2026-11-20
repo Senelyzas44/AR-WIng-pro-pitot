@@ -4,16 +4,20 @@ part = "both";
 $fn = 72;
 
 // Vent bridge. Negative X faces the nose, Y crosses the vent.
-vent_span = 22; // Estimate from the 20 mm photo annotation, plus side clearance.
-hose_clearance = 10; // Extra room for the hoses to descend into the vent.
+vent_span = 22; // Photo estimate with clearance at the sides.
+bridge_height = 7;
+bridge_thickness = 2.5;
 pad_length = 18;
 pad_width = 7;
-bridge_thickness = 3;
-tab_length = 11; // Prototype estimate. Measure the flat factory ear.
-tab_width = 8;
-tab_clearance = 0.35;
-probe_axis_offset = 5; // Lateral distance from the probe axis to the tab centre.
-mirror_tab = false;
+foam_crown = 1.2; // Estimated rise across the complete span of the two pads.
+
+// Round PT40 shaft saddle.
+tube_diameter = 4.5;
+tube_clearance = 0.3; // Diametral clearance.
+saddle_length = 12;
+saddle_width = 11;
+tie_width = 2.5;
+tie_thickness = 1.2;
 
 // Sensor envelope. X is across the board, Y runs toward the hose exit.
 board_width = 20;
@@ -30,56 +34,70 @@ module rounded_plate(length, width, height, radius) {
             square([length - 2 * radius, width - 2 * radius], center = true);
 }
 
-module tab_seat(z) {
-    difference() {
-        translate([0, 0, z - 0.1])
-            rounded_plate(tab_length + 2, tab_width + 2, 1.1, 1);
-        // The probe body overhangs the open side of the ear seat.
-        translate([-tab_length / 2 - tab_clearance, -tab_width / 2 - 2, z])
-            cube([tab_length + 2 * tab_clearance,
-                tab_width + tab_clearance + 2, 1.2]);
-    }
-}
-
-module streamlined_pad(height) {
-    linear_extrude(height)
+module glue_pad() {
+    linear_extrude(bridge_height + 0.25)
         hull() {
             translate([-pad_length / 2 + pad_width / 2, 0])
                 circle(d = pad_width);
-            translate([pad_length / 2 - 0.8, 0])
-                circle(r = 0.8);
+            translate([pad_length / 2 - 1, 0])
+                circle(r = 1);
         }
 }
 
-module streamlined_deck() {
-    seat_half_length = (tab_length + 2) / 2;
-    translate([0, 0, hose_clearance])
+module bridge_deck(total_width) {
+    // Keep a flat centre for the pipe saddle and round the exposed edges.
+    flat_half_length = saddle_length / 2;
+    translate([0, 0, bridge_height])
         rotate([90, 0, 0])
-            linear_extrude(vent_span + 2 * pad_width, center = true)
+            linear_extrude(total_width - 1, center = true)
                 hull() {
-                    for (x = [-seat_half_length, seat_half_length])
+                    for (x = [-flat_half_length, flat_half_length])
                         translate([x, bridge_thickness / 2])
                             circle(d = bridge_thickness);
-                    // Leave the tab landing flat and taper the downstream edge.
-                    translate([seat_half_length + 4, 0.6])
+                    translate([flat_half_length + 2, 0.6])
                         circle(r = 0.6);
                 }
 }
 
+module pipe_saddle(deck_top) {
+    bore = tube_diameter + tube_clearance;
+    groove_z = deck_top + 3 + bore / 2;
+    tie_slot_height = tie_thickness + 0.35;
+
+    difference() {
+        translate([0, 0, deck_top - 0.15])
+            rounded_plate(saddle_length, saddle_width, groove_z - deck_top + 0.15, 1);
+        translate([0, 0, groove_z])
+            rotate([0, 90, 0])
+                cylinder(d = bore, h = saddle_length + 2, center = true);
+        // Crosswise passage for a tie that wraps over the tube.
+        translate([-(tie_width + 0.45) / 2, -saddle_width / 2 - 1, deck_top + 0.45])
+            cube([tie_width + 0.45, saddle_width + 2, tie_slot_height]);
+    }
+}
+
 module saddle() {
-    deck_top = hose_clearance + bridge_thickness;
-    union() {
-        for (side = [-1, 1])
-            translate([0, side * (vent_span + pad_width) / 2, 0])
-                streamlined_pad(hose_clearance + 0.2);
+    total_width = vent_span + 2 * pad_width;
+    half_width = total_width / 2;
+    foam_radius = foam_crown > 0
+        ? (half_width * half_width + foam_crown * foam_crown) / (2 * foam_crown)
+        : 0;
 
-        streamlined_deck();
+    difference() {
+        union() {
+            for (side = [-1, 1])
+                translate([0, side * (vent_span + pad_width) / 2, 0])
+                    glue_pad();
 
-        if (mirror_tab)
-            mirror([0, 1, 0])
-                translate([0, probe_axis_offset, 0]) tab_seat(deck_top);
-        else
-            translate([0, probe_axis_offset, 0]) tab_seat(deck_top);
+            bridge_deck(total_width);
+            pipe_saddle(bridge_height + bridge_thickness);
+        }
+
+        if (foam_crown > 0)
+            translate([0, 0, foam_crown - foam_radius])
+                rotate([0, 90, 0])
+                    cylinder(r = foam_radius, h = pad_length + 4,
+                        center = true, $fn = 480);
     }
 }
 
