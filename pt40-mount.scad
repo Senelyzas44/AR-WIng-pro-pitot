@@ -5,7 +5,7 @@ $fn = 72;
 
 // Vent bridge. X follows the probe, Y crosses the vent.
 vent_span = 22; // Estimate from the 20 mm photo annotation, plus side clearance.
-hose_clearance = 8;
+hose_clearance = 10; // Extra room for the hoses to descend into the vent.
 pad_length = 18;
 pad_width = 7;
 bridge_thickness = 3;
@@ -20,7 +20,9 @@ board_width = 20;
 board_length = 22;
 board_clearance = 0.4;
 strap_width = 3;
-strap_thickness = 1.1;
+strap_thickness = 0.8;
+strap_offset = -7; // Rear of the board, away from the upward-facing ports.
+cradle_floor = 1.8;
 
 module rounded_plate(length, width, height, radius) {
     linear_extrude(height)
@@ -59,7 +61,7 @@ module saddle() {
 }
 
 module cradle() {
-    floor_height = 2.5;
+    floor_height = cradle_floor;
     rail_height = 1.5;
     opening = board_width + 2 * board_clearance;
     length = board_length + 2 * board_clearance + 2;
@@ -69,7 +71,7 @@ module cradle() {
     difference() {
         union() {
             rounded_plate(width, length, floor_height, 2);
-            // Short rails stop well behind the open hose and connector ends.
+            // Short rails leave the board ends accessible.
             for (side = [-1, 1])
                 translate([side * (opening / 2 + 0.65), 0,
                     floor_height - 0.01])
@@ -77,10 +79,10 @@ module cradle() {
                         rail_height + 0.01, 0.35);
         }
         // Feed the strap through the under-floor tunnel before gluing.
-        translate([-strap_slot_x - 0.8, -strap_width / 2, -0.01])
+        translate([-strap_slot_x - 0.8, strap_offset - strap_width / 2, -0.01])
             cube([2 * strap_slot_x + 1.6, strap_width, strap_thickness + 0.01]);
         for (side = [-1, 1])
-            translate([side * strap_slot_x - 0.8, -strap_width / 2, -0.1])
+            translate([side * strap_slot_x - 0.8, strap_offset - strap_width / 2, -0.1])
                 cube([1.6, strap_width, floor_height + 0.2]);
     }
 }
