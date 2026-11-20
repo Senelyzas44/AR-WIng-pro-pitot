@@ -9,7 +9,8 @@ bridge_height = 7;
 bridge_thickness = 2.5;
 pad_length = 18;
 pad_width = 7;
-foam_crown = 1.2; // Estimated rise across the complete span of the two pads.
+foam_crown = 1.2; // Estimated crosswise rise over the full width of the feet.
+foam_lengthwise_crown = 0.35; // Estimated front-to-back rise over one foot.
 
 // Round PT40 shaft saddle.
 tube_diameter = 4.5;
@@ -100,15 +101,34 @@ module manifold_support(shaft_axis_z) {
     }
 }
 
+function crown_height(position, half_chord, rise) =
+    rise == 0 ? 0 :
+        let(radius = (half_chord * half_chord + rise * rise) / (2 * rise))
+        rise - position * position / (radius + sqrt(radius * radius - position * position));
+
+module foam_clearance(total_width) {
+    // Sweep the crosswise arc along the lengthwise arc. The cutter models
+    // the foam beside the vent, which is where the two feet make contact.
+    x_limit = pad_length / 2 + 0.5;
+    y_limit = total_width / 2 + 0.5;
+    cross_section = [for (step = [32:-1:0])
+        let(y = -y_limit + 2 * y_limit * step / 32)
+        [y, crown_height(y, total_width / 2, foam_crown)]];
+
+    hull()
+        for (step = [0:12])
+            let(x = -x_limit + 2 * x_limit * step / 12,
+                rise = crown_height(x, pad_length / 2, foam_lengthwise_crown))
+            translate([x, 0, rise])
+                multmatrix([[0, 0, 1, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+                    linear_extrude(0.02, center = true)
+                        polygon(concat([[-y_limit, -2], [y_limit, -2]], cross_section));
+}
+
 module saddle() {
     deck_top = bridge_height + bridge_thickness;
     shaft_axis_z = deck_top + 3 + tube_diameter / 2;
     total_width = vent_span + 2 * pad_width;
-    half_width = total_width / 2;
-    foam_radius = foam_crown > 0
-        ? (half_width * half_width + foam_crown * foam_crown) / (2 * foam_crown)
-        : 0;
-
     difference() {
         union() {
             for (side = [-1, 1])
@@ -120,11 +140,8 @@ module saddle() {
             manifold_support(shaft_axis_z);
         }
 
-        if (foam_crown > 0)
-            translate([0, 0, foam_crown - foam_radius])
-                rotate([0, 90, 0])
-                    cylinder(r = foam_radius, h = pad_length + 4,
-                        center = true, $fn = 480);
+        if (foam_crown > 0 || foam_lengthwise_crown > 0)
+            foam_clearance(total_width);
     }
 }
 
